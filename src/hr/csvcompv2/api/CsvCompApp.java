@@ -1,6 +1,7 @@
 package hr.csvcompv2.api;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,28 +28,32 @@ public class CsvCompApp {
  */
 	
 	
-	final static Logger logger = Logger.getLogger(CsvCompApp.class);
+	static final Logger logger = Logger.getLogger(CsvCompApp.class);
 	static String customerName = "custName";
 	static Path path=null, output=null;
 	static Reporter reporter;
+	static int outputFolderIndex = 0; // used in the method createOutputFolder() to keep the folder index
 	
 	public static void main(String[] args) {
 		logger.info("\n			  -----  CSV Verification Tool version 2.0  -----\n"
 				+ "					---(Final Edition)---\n");
 		
 		setPath(Paths.get("."));
-//		setPath(Paths.get("C:\\Users\\hmranasinghe\\Desktop\\Alf\\TharangaTool\\csv-compare-tool-0.0.4\\"
-//		 		+ "csv-compare-tool-0.0.4\\csv-pro-app-0.0.4\\setup\\input\\Test\\"));
+		setPath(Paths.get("C:\\Users\\hmranasinghe\\Desktop\\Alf\\TharangaTool\\csv-compare-tool-0.0.4\\"
+		 		+ "csv-compare-tool-0.0.4\\csv-pro-app-0.0.4\\setup\\input\\Test2\\"));
 		
 		logger.debug("Selected Path \t\t: " + getPath().toString());
 		
-		setCustomerName(path);
-		
-		compare();
+		try {
+			setCustomerName(path);
+			compare();
+		} catch (IOException e) {
+			logger.error(e);
+		}
 		
 	}
 	
-	private static void compare() {
+	private static void compare() throws IOException{
 		
 		logger.info("Processing Verification Reports for the Customer : " + customerName);
 		
@@ -60,7 +65,6 @@ public class CsvCompApp {
 			Loader loader = new Loader(path);
 		} catch (Exception e) {
 			logger.fatal("No Files Found", e);
-			System.exit(0);
 		}
 		
 		logger.debug("Parssing started for : " + customerName);
@@ -143,7 +147,7 @@ public class CsvCompApp {
 
 	}
 	
-	private static void setCustomerName(Path path){
+	private static void setCustomerName(Path path) throws IOException{
 		/**
 		 * Trying to read the file name from the files in the CMODout folder
 		 * example file name - CustomerDataReport_DRCi_LILLY_06-3-2017
@@ -157,7 +161,7 @@ public class CsvCompApp {
 
 			for (String eachFile : filePath.list()) {
 				String fileName = eachFile;
-				if (customerName.equalsIgnoreCase("custName") || customerName.isEmpty()) {
+				if (customerName.isEmpty() || "custName".equalsIgnoreCase(customerName)) {
 					Pattern pattern = Pattern.compile("(?<=DRCi_).*?(?=_[0-9])");
 					Matcher matcher = pattern.matcher(fileName);
 					matcher.find();
@@ -168,7 +172,7 @@ public class CsvCompApp {
 			
 		} catch (Exception e) {
 			logger.fatal("File Not Found \t: No files could be located inside the CMODOut Folder", e);
-			System.exit(0);
+			throw new IOException("File Not Found \t: No files could be located inside the CMODOut Folder : " + e);
 		}
 		
 	}
@@ -177,8 +181,7 @@ public class CsvCompApp {
 		return customerName;
 	}
 	
-	static int outputFolderIndex = 0;
-	public static Path createOutputFolder(Path output){
+	public static Path createOutputFolder(Path output) throws IOException{
 		Path outputNew=output;
 		while(Files.exists(outputNew)){
 			outputFolderIndex++;
@@ -191,6 +194,7 @@ public class CsvCompApp {
 			Files.createDirectory(outputNew);
 		} catch (Exception e) {
 			logger.fatal("Report generation failed!" , e);
+			throw new IOException("Report generation failed! : " + e);
 		}
 		
 		return outputNew;
@@ -225,21 +229,23 @@ public class CsvCompApp {
 			typeOfFile = "UserDataReport";
 			header = "User ID";
 			break;
+		default:
+			logger.error("File Type Error : " + type);
 		}
 		
-		if (missing.size() != 0){
+		if (!missing.isEmpty()){
 			reporter.createCSV(missing, customerName+"_"+ typeOfFile +"_Missing", output, header);
 		}
-		if (alfDups.size() != 0){
+		if (!alfDups.isEmpty()){
 			reporter.createCSV(alfDups, customerName+"_"+ typeOfFile +"_Alfresco_Duplicates", output, header);
 		}
-		if (cmodDups.size() != 0){
+		if (!cmodDups.isEmpty()){
 			reporter.createCSV(cmodDups, customerName+"_"+ typeOfFile +"_CMOD_Duplicates", output, header);
 		}
 		
-		if(missing.size() == 0 && alfDups.size() == 0){
-			System.out.println("\n-------------------------------------\nRecord count difference " + compare.getRecordCountDiferrence());
-			System.out.println("-------------------------------------");
+		if(missing.isEmpty() && alfDups.isEmpty()){
+			logger.info("\n-------------------------------------\nRecord count difference " + compare.getRecordCountDiferrence());
+			logger.info("-------------------------------------");
 		}
 	}
 	

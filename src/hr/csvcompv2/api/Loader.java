@@ -8,11 +8,11 @@ import org.apache.log4j.Logger;
 
 public class Loader {
 
-	final static Logger logger = Logger.getLogger(Loader.class);
-	private Path path;
+	static final Logger logger = Logger.getLogger(Loader.class);
+	private static Path path;
 
 	Loader(Path path) {
-		this.path = path;
+		Loader.path = path;
 		load();
 	}
 
@@ -51,7 +51,7 @@ public class Loader {
 		return userAlf;
 	}
 
-	private void load() {
+	private static void load() {
 
 		/**
 		 * this method will load all the required files from the given location

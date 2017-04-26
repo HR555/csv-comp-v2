@@ -1,74 +1,68 @@
 package hr.csvcompv2.parser;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.log4j.Logger;
 
+import com.google.common.base.Strings;
+
 import hr.csvcompv2.batcher.Batcher;
-import hr.csvcompv2.exception.NoRecordsFoundException;
 
 public class Parser {
 
-	final static Logger logger = Logger.getLogger(Parser.class);
+	static final Logger logger = Logger.getLogger(Parser.class);
 
 	Batcher batcher;
 	List<String> list;
+	int colCount;
+	int recordCount;
 
 	public int parse(File file, int colCount) {
+		this.colCount = colCount;
+		
 		batcher = new Batcher();
 		list = new ArrayList<>();
-		String line, record;
-		int recordCount=0;
-		BufferedReader reader;
-		try {
-			reader = new BufferedReader(new FileReader(file));
+		
+		recordCount=0;
 
+		try (Stream<String> stream = Files.lines(Paths.get(file.getAbsolutePath())).skip(1)) {
+
+			
 			if (colCount > 1) {
-				line = null;
-
-				reader.readLine();
-				while ((line = reader.readLine()) != null) {
-					record = line.trim();
-					if (!record.equals("")){
-						batcher.addRecord(record, colCount);
-						recordCount++;
-					}
-				}
-				
-			} else {
-				/**
-				 * for user reports the batcher is not used and the list is used
-				 * to store all the email addresses
-				 */
-				line = null;
-
-				reader.readLine();
-				while ((line = reader.readLine()) != null) {
-					if (!line.equals("")){
-						recordCount++;
-						record = line.trim().split("@")[0].toLowerCase().replace(",", "");
-						list.add(record);
-					}
-				}
-			}
-			reader.close();
-
-			if (recordCount == 0) {
-				throw new NoRecordsFoundException();
-				
+				stream.forEachOrdered(line -> sendToBatcher(line));
 			}
 			
+			else {
+				list = stream
+						.filter(line -> !Strings.isNullOrEmpty(line))
+						.map(line -> line.trim().split("@")[0].toLowerCase().replace(",", ""))
+						.collect(Collectors.toList()); 
+			}
+			
+			
 		} catch (IOException e) {
-			logger.fatal("File Not Found", e);
+			e.printStackTrace();
 		}
+		
 		return recordCount;
+		
 	}
 
+	private void sendToBatcher(String line) {
+		String record = line.trim();
+		if (!"".equals(record)){
+			recordCount++;
+			batcher.addRecord(record, colCount);
+		}
+	}
+	
 	public Batcher getBatch() {
 		return batcher;
 	}

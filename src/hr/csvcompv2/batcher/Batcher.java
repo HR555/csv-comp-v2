@@ -22,18 +22,19 @@ public class Batcher {
 	 * batchID
 	 */
 
-	final static Logger logger = Logger.getLogger(Batcher.class);
+	static final Logger logger = Logger.getLogger(Batcher.class);
 
 	SetMultimap<String, String> batches = HashMultimap.create();
 
 	SetMultimap<String, String> duplicates = HashMultimap.create();
 
-	private String batchID, docID;
-	private String[] recordAsArray;
-	final private String comma = ",";
+	private static final String COMMA = ",";
 
 	public void addRecord(String record, int colCount) {
 
+		String batchID, docID;
+		String[] recordAsArray;
+		
 		recordAsArray = record.split(",");
 
 		switch (colCount) {
@@ -53,10 +54,10 @@ public class Batcher {
 		case 3:
 			batchID = recordAsArray[0].trim();
 			
-			if(recordAsArray.length<3){
-				docID = recordAsArray[1].trim();
-			}else{
-				docID = recordAsArray[1].trim() + comma + recordAsArray[2].trim();
+			docID = recordAsArray[1].trim();
+			
+			if(recordAsArray.length>2){
+				docID = recordAsArray[1].trim() + COMMA + recordAsArray[2].trim();
 			}
 			
 			addRecord(batchID, docID);
@@ -64,28 +65,34 @@ public class Batcher {
 		case 4:
 			batchID = recordAsArray[0].trim();
 
-			/**
-			 * following try catch block will convert the date format used in
-			 * the Alfresco side file to the date format used in the CMOD side
-			 */
-			try {
-				String originalDateStr = recordAsArray[1];
-				DateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-				DateFormat targetFormat = new SimpleDateFormat("MM/dd/yyyy");
-				Date originalDate = originalFormat.parse(originalDateStr);
-				String formattedDateStr = targetFormat.format(originalDate);
-				recordAsArray[1] = formattedDateStr;
-			} catch (ParseException e) {
-				logger.fatal("Date Conversion Failed", e);
-//				System.exit(0);
-			}
+			recordAsArray[1] = dateFormatChanger(recordAsArray[1]);
 
-			docID = recordAsArray[1].trim() + comma + recordAsArray[2].trim();
+			docID = recordAsArray[1].trim() + COMMA + recordAsArray[2].trim();
 
 			addRecord(batchID, docID);
 			break;
+		default:
+			logger.error(recordAsArray + " : Issue with the record");
 		}
 
+	}
+	
+	private String dateFormatChanger(String value){
+		/**
+		 * following try catch block will convert the date format used in
+		 * the Alfresco side file to the date format used in the CMOD side
+		 */
+		String originalDateStr = value;
+		String formattedDateStr=null;
+		try {
+			DateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			DateFormat targetFormat = new SimpleDateFormat("MM/dd/yyyy");
+			Date originalDate = originalFormat.parse(originalDateStr);
+			formattedDateStr = targetFormat.format(originalDate);
+		} catch (ParseException e) {
+			logger.fatal("Date Conversion Failed", e);
+		}
+		return formattedDateStr;
 	}
 
 	public void addRecord(String batchID, String docID) {
@@ -106,8 +113,8 @@ public class Batcher {
 		return batches;
 	}
 
-	public Set<String> getDocs(String BatchID) {
-		return batches.get(BatchID);
+	public Set<String> getDocs(String batchID) {
+		return batches.get(batchID);
 	}
 
 	public List<String> getDuplicates() {
@@ -120,7 +127,7 @@ public class Batcher {
 
 		for (Entry<String, Collection<String>> e : setMultimap.asMap().entrySet()) {
 			for (String value : e.getValue()) {
-				convertedList.add((e.getKey() + comma + value));
+				convertedList.add(e.getKey() + COMMA + value);
 			}
 		}
 

@@ -18,9 +18,9 @@ import hr.csvcompv2.parser.Parser;
 public class Compare {
 
 	Parser parser;
-	final static Logger logger = Logger.getLogger(Compare.class);
+	static final Logger logger = Logger.getLogger(Compare.class);
 	private List<String> missing, cmodDuplicates, alfDuplicates;
-	final String comma = ",";
+	private static final String COMMA = ",";
 	int alfrescoRecordCount, cmodRecordCount;
 	public Compare() {
 
@@ -52,24 +52,24 @@ public class Compare {
 	}
 
 	private void compareBatchwithFile(Batcher batch, File file, int colCount) {
-		BufferedReader reader;
+		
 		String[] lineArray;
 		String batchID,docID;
-		try {
-			reader = new BufferedReader(new FileReader(file));
+		
+		try (BufferedReader reader = new BufferedReader(new FileReader(file))){
 			String line;
-			reader.readLine();
+			reader.readLine();// skipping the headers
 			while ((line = reader.readLine()) != null) {
 				line = line.trim();
 
-				lineArray = line.split(comma);
+				lineArray = line.split(COMMA);
 
 				batchID = lineArray[0].trim();
 				
 				if(colCount<3){
 					docID = lineArray[1].trim();
 				}else{
-					docID = lineArray[1].trim()+ comma +lineArray[2].trim();
+					docID = lineArray[1].trim()+ COMMA +lineArray[2].trim();
 				}
 				boolean foundBatch = false;
 
@@ -99,9 +99,9 @@ public class Compare {
 			}
 
 		} catch (IOException e) {
-			logger.fatal(e);
+			logger.fatal("File read error : "+e);
 		}
-
+		
 	}
 
 	public void reconData(File imRecCmod, File imRecAlf) {
@@ -151,36 +151,29 @@ public class Compare {
 		alfDuplicates = new ArrayList<>();
 
 		for (String eachUser : list1) {
-			if (!list2.contains(eachUser)) {
-				if(!missing.contains(eachUser)){
-					missing.add(eachUser);
-				}
+			if (!list2.contains(eachUser) && !missing.contains(eachUser)) {
+				missing.add(eachUser);
 			}
 		}
 
-		Set<String> cmodUniques = new HashSet<String>();
+		Set<String> cmodUniques = new HashSet<>();
 		Set<String> temp = new HashSet<>();
 		for (String user : list1) {
-			if (!cmodUniques.add(user)) {
-				if(temp.add(user)){
-					cmodDuplicates.add(user);
-				}
+			if (!cmodUniques.add(user) && temp.add(user)) {
+				cmodDuplicates.add(user);
 			}
 		}
 		
 		temp.clear();
 
-		Set<String> alfUniques = new HashSet<String>();
+		Set<String> alfUniques = new HashSet<>();
 
 		for (String user : list2) {
-			if (!alfUniques.add(user)) {
-				if(temp.add(user)){
-					alfDuplicates.add(user);
-				}
+			if (!alfUniques.add(user) && temp.add(user)) {
+				alfDuplicates.add(user);
 			}
 		}
 		temp.clear();
-		temp=null;
 	}
 
 	public List<String> getMissing() {

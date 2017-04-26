@@ -15,7 +15,7 @@ import org.apache.log4j.Logger;
 
 public class Reporter {
 
-	final static Logger logger = Logger.getLogger(Reporter.class);
+	static final Logger logger = Logger.getLogger(Reporter.class);
 
 	String custName;
 	Path path;
