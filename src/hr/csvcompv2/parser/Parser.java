@@ -26,7 +26,6 @@ public class Parser {
 
 	public int parse(File file, int colCount) {
 		this.colCount = colCount;
-		
 		batcher = new Batcher();
 		list = new ArrayList<>();
 		
@@ -36,7 +35,10 @@ public class Parser {
 
 			
 			if (colCount > 1) {
-				stream.forEachOrdered(line -> sendToBatcher(line));
+				stream
+				.map(line -> line.trim())
+				.forEachOrdered(line -> sendToBatcher(line));
+				
 			}
 			
 			else {
@@ -56,10 +58,9 @@ public class Parser {
 	}
 
 	private void sendToBatcher(String line) {
-		String record = line.trim();
-		if (!"".equals(record)){
+		if (!"".equals(line)){
 			recordCount++;
-			batcher.addRecord(record, colCount);
+			batcher.addRecord(line, colCount);
 		}
 	}
 	
