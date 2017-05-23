@@ -39,9 +39,7 @@ public class CsvCompApp {
 				+ "					---(Final Edition)---\n");
 		
 		setPath(Paths.get("."));
-		setPath(Paths.get("C:\\Users\\hmranasinghe\\Desktop\\Alf\\TharangaTool\\csv-compare-tool-0.0.4\\"
-		 		+ "csv-compare-tool-0.0.4\\csv-pro-app-0.0.4\\setup\\input\\Test2\\"));
-		
+	
 		logger.debug("Selected Path \t\t: " + getPath().toString());
 		
 		try {
